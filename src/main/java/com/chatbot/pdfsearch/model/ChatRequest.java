@@ -8,6 +8,6 @@ import lombok.NonNull;
 public class ChatRequest {
 
     private String documentId;
-    @NonNull
     private String question;
+    private SearchMode searchMode;
 }
