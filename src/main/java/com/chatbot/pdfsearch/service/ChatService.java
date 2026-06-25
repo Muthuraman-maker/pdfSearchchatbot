@@ -1,5 +1,8 @@
 package com.chatbot.pdfsearch.service;
 
+import com.chatbot.pdfsearch.model.ChatResponse;
+import com.chatbot.pdfsearch.model.PdfSearchResult;
+import com.chatbot.pdfsearch.model.SearchMode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
@@ -18,12 +21,102 @@ public class ChatService {
 
     private final ChatClient.Builder chatClientBuilder;
 
-    public String askQuestion(
+    private final InternetSearchService internetSearchService;
+
+    public ChatResponse askQuestion(
+            String documentId,
+            String question,
+            SearchMode searchMode) {
+
+        String pdfContext = "";
+        String internetContext = "";
+
+        boolean pdfContextUsed = false;
+        boolean internetContextUsed = false;
+
+        int pdfChunksRetrieved = 0;
+        if (searchMode == SearchMode.PDF_ONLY) {
+            PdfSearchResult result =
+                    getPdfContext(
+                            documentId,
+                            question);
+
+            pdfContext = result.getContext();
+            pdfChunksRetrieved = result.getChunkCount();
+            pdfContextUsed = true;
+        }
+        if (searchMode == SearchMode.INTERNET_ONLY) {
+
+            internetContext =
+                    internetSearchService.search(
+                            question);
+            internetContextUsed = true;
+        }
+        if (searchMode == SearchMode.PDF_AND_INTERNET) {
+
+            PdfSearchResult result =
+                    getPdfContext(
+                            documentId,
+                            question);
+
+            pdfContext =
+                    result.getContext();
+
+            pdfChunksRetrieved =
+                    result.getChunkCount();
+
+            internetContext =
+                    internetSearchService.search(
+                            question);
+
+            pdfContextUsed = true;
+            internetContextUsed = true;
+        }
+
+        String prompt = """
+        You are a helpful assistant.
+
+        PDF Context:
+        %s
+
+        Internet Context:
+        %s
+
+        Question:
+        %s
+
+        Rules:
+
+        1. Prefer PDF context only. Do not add any information. If answer exists,quote the exact content. otherwise say content not present in pdf, and then return data from Internet Context.
+        2. Use internet context only as supplement.
+        3. If both contain similar information,prioritize PDF.
+        """
+                .formatted(
+                        pdfContext,
+                        internetContext,
+                        question);
+        String answer =
+                chatClientBuilder
+                        .build()
+                        .prompt()
+                        .user(prompt)
+                        .call()
+                        .content();
+        return new ChatResponse(
+                answer,
+                searchMode.name(),
+                pdfContextUsed,
+                internetContextUsed,
+                pdfChunksRetrieved);
+    }
+
+    private PdfSearchResult getPdfContext(
             String documentId,
             String question) {
 
         List<Document> documents =
                 vectorStoreService.search(
+                        documentId,
                         question);
 
         String context =
@@ -31,32 +124,8 @@ public class ChatService {
                         .map(Document::getText)
                         .collect(Collectors.joining("\n"));
 
-        String prompt = """
-                Answer the question using
-                the context below.
-
-                Context:
-                %s
-
-                Question:
-                %s
-                """
-                .formatted(
-                        context,
-                        question);
-        System.out.println("Question = " + question);
-
-        System.out.println("Documents Found = "
-                + documents.size());
-
-        documents.forEach(doc ->
-                System.out.println(
-                        doc.getText()));
-        return chatClientBuilder
-                .build()
-                .prompt()
-                .user(prompt)
-                .call()
-                .content();
+        return new PdfSearchResult(
+                context,
+                documents.size());
     }
 }

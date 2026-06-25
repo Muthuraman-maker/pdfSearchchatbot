@@ -20,9 +20,9 @@ public class ChatController {
     public ChatResponse ask(
             @RequestBody ChatRequest request) {
 
-        return new ChatResponse(
-                chatService.askQuestion(
-                        request.getDocumentId(),
-                        request.getQuestion()));
+        return chatService.askQuestion(
+                request.getDocumentId(),
+                request.getQuestion(),
+                request.getSearchMode());
     }
 }

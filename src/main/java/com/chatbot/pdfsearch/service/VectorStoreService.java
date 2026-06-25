@@ -18,14 +18,19 @@ public class VectorStoreService {
         vectorStore.add(docs);
     }
 
-    public List<Document> search(String question) {
+    public List<Document> search(String documentId, String question) {
 
         SearchRequest request =
                 SearchRequest.builder()
                         .query(question)
                         .topK(5)
+                        .filterExpression("documentId =='"+documentId+"'")
                         .build();
 
         return vectorStore.similaritySearch(request);
+    }
+
+    public void deleteDocument(String documentId) {
+        vectorStore.delete("documentId == '" + documentId + "'");
     }
 }
