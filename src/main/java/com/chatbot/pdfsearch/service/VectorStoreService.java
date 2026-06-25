@@ -29,4 +29,8 @@ public class VectorStoreService {
 
         return vectorStore.similaritySearch(request);
     }
+
+    public void deleteDocument(String documentId) {
+        vectorStore.delete("documentId == '" + documentId + "'");
+    }
 }

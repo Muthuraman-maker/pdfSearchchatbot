@@ -5,6 +5,7 @@ import com.chatbot.pdfsearch.model.DocumentResponse;
 import com.chatbot.pdfsearch.model.UploadResponse;
 import com.chatbot.pdfsearch.processor.PdfProcessor;
 import com.chatbot.pdfsearch.repository.DocumentRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.core.io.FileSystemResource;
@@ -100,5 +101,18 @@ public class DocumentService {
                                         document.getUploadedAt())
                                 .build())
                 .toList();
+    }
+
+    @Transactional
+    public void deleteDocument(String documentId) {
+
+        if (!documentRepository.existsById(documentId)) {
+            throw new RuntimeException(
+                    "Document with id " + documentId + " does not exist.");
+        }
+
+        vectorStoreService.deleteDocument(documentId);
+
+        documentRepository.deleteById(documentId);
     }
 }
