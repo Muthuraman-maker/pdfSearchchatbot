@@ -87,9 +87,9 @@ public class ChatService {
 
         Rules:
 
-        1. Prefer PDF context only. Do not add any information. If answer exists,quote the exact content. otherwise say content not present in pdf, and then return data from Internet Context.
+        1. Prefer PDF context only. Do not add any information. If answer exists,quote the exact content. otherwise say content not present in pdf.
         2. Use internet context only as supplement.
-        3. If both contain similar information,prioritize PDF.
+        3. If both contain similar information, generate a new definition combining both context.
         """
                 .formatted(
                         pdfContext,
