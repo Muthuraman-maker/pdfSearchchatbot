@@ -1,0 +1,75 @@
+version: '3.9'
+
+services:
+
+  postgres:
+
+    image: pgvector/pgvector:pg17
+
+    container_name: pdf-postgres
+
+    restart: always
+
+    environment:
+
+      POSTGRES_DB: pdfchat
+
+      POSTGRES_USER: postgres
+
+      POSTGRES_PASSWORD: postgress
+
+    ports:
+
+      - "5432:5432"
+
+    volumes:
+
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+
+    build: .
+
+    container_name: pdf-springbootbackend
+
+    depends_on:
+
+      - postgres
+
+    ports:
+
+      - "8081:8081"
+
+    environment:
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pdfchat
+
+      SPRING_DATASOURCE_USERNAME: postgres
+
+      SPRING_DATASOURCE_PASSWORD: postgress
+
+      SPRING_AI_OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+
+  frontend:
+
+    build:
+
+      context: ./chatbot-client
+
+    container_name: pdf-angular
+
+    restart: unless-stopped
+
+    depends_on:
+
+      - backend
+
+    ports:
+
+      - "4200:80"
+
+volumes:
+
+  postgres_data:
